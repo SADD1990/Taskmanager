@@ -174,12 +174,30 @@ document.addEventListener('DOMContentLoaded', () => {
             const deadline = new Date(task.deadline);
             const formattedDeadline = `${deadline.toLocaleDateString('ar-EG')} - ${deadline.toLocaleTimeString('ar-EG', { hour: '2-digit', minute: '2-digit' })}`;
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${escapeHtml(task.title)}</td>
-                <td>${client ? escapeHtml(client.name) : 'عميل محذوف'}</td>
-                <td>${(task.price || 0).toFixed(2)} ر.س</td>
-                <td>${formattedDeadline}</td>
-                <td><span class="status-badge">${escapeHtml(task.status)}</span></td>`;
+
+            const titleTd = document.createElement('td');
+            titleTd.textContent = task.title;
+            tr.appendChild(titleTd);
+
+            const clientTd = document.createElement('td');
+            clientTd.textContent = client ? client.name : 'عميل محذوف';
+            tr.appendChild(clientTd);
+
+            const priceTd = document.createElement('td');
+            priceTd.textContent = `${(task.price || 0).toFixed(2)} ر.س`;
+            tr.appendChild(priceTd);
+
+            const deadlineTd = document.createElement('td');
+            deadlineTd.textContent = formattedDeadline;
+            tr.appendChild(deadlineTd);
+
+            const statusTd = document.createElement('td');
+            const statusSpan = document.createElement('span');
+            statusSpan.className = 'status-badge';
+            statusSpan.textContent = task.status;
+            statusTd.appendChild(statusSpan);
+            tr.appendChild(statusTd);
+
             recentTasksTableBody.appendChild(tr);
         });
     }
@@ -231,26 +249,112 @@ document.addEventListener('DOMContentLoaded', () => {
         const remaining = (task.price || 0) - (task.prepaid || 0);
         const deadlineDate = new Date(task.deadline);
         const localDeadline = new Date(deadlineDate.getTime() - (deadlineDate.getTimezoneOffset() * 60000)).toISOString().slice(0, 16);
-        
-        const clientOptions = appData.clients.map(c => 
-            `<option value="${c.id}" ${c.id === task.clientId ? 'selected' : ''}>${escapeHtml(c.name)} (${escapeHtml(c.phone)})</option>`
-        ).join('');
 
-        const typeOptions = TASK_TYPES.map(type => `<option value="${type}" ${task.type === type ? 'selected' : ''}>${type}</option>`).join('');
-        const statusOptions = Object.values(TASK_STATUS).map(status => `<option value="${status}" ${task.status === status ? 'selected' : ''}>${status}</option>`).join('');
+        // Title
+        const titleTd = document.createElement('td');
+        const titleInput = document.createElement('input');
+        titleInput.type = 'text';
+        titleInput.className = 'editable-input';
+        titleInput.value = task.title;
+        titleInput.dataset.field = 'title';
+        titleTd.appendChild(titleInput);
+        tr.appendChild(titleTd);
 
-        tr.innerHTML = `
-            <td><input type="text" class="editable-input" value="${escapeHtml(task.title)}" data-field="title"></td>
-            <td><select class="editable-select client-select" data-field="clientId">${clientOptions}</select></td>
-            <td><select class="editable-select" data-field="type">${typeOptions}</select></td>
-            <td><input type="number" step="0.01" class="editable-input price-input" value="${task.price || 0}" data-field="price"></td>
-            <td><input type="number" step="0.01" class="editable-input prepaid-input" value="${task.prepaid || 0}" data-field="prepaid"></td>
-            <td class="remaining-cell">${remaining.toFixed(2)} ر.س</td>
-            <td><input type="datetime-local" class="editable-input" value="${localDeadline}" data-field="deadline"></td>
-            <td><select class="editable-select" data-field="status">${statusOptions}</select></td>
-            <td><button class="btn-delete" data-type="task" title="حذف المهمة"><i class="fas fa-trash-alt"></i></button></td>`;
-        
-        const clientSelect = tr.querySelector('.client-select');
+        // Client select
+        const clientTd = document.createElement('td');
+        const clientSelect = document.createElement('select');
+        clientSelect.className = 'editable-select client-select';
+        clientSelect.dataset.field = 'clientId';
+        appData.clients.forEach(c => {
+            const option = document.createElement('option');
+            option.value = c.id;
+            option.textContent = `${c.name} (${c.phone})`;
+            if (c.id === task.clientId) option.selected = true;
+            clientSelect.appendChild(option);
+        });
+        clientTd.appendChild(clientSelect);
+        tr.appendChild(clientTd);
+
+        // Type select
+        const typeTd = document.createElement('td');
+        const typeSelect = document.createElement('select');
+        typeSelect.className = 'editable-select';
+        typeSelect.dataset.field = 'type';
+        TASK_TYPES.forEach(type => {
+            const option = document.createElement('option');
+            option.value = type;
+            option.textContent = type;
+            if (task.type === type) option.selected = true;
+            typeSelect.appendChild(option);
+        });
+        typeTd.appendChild(typeSelect);
+        tr.appendChild(typeTd);
+
+        // Price input
+        const priceTd = document.createElement('td');
+        const priceInput = document.createElement('input');
+        priceInput.type = 'number';
+        priceInput.step = '0.01';
+        priceInput.className = 'editable-input price-input';
+        priceInput.value = task.price || 0;
+        priceInput.dataset.field = 'price';
+        priceTd.appendChild(priceInput);
+        tr.appendChild(priceTd);
+
+        // Prepaid input
+        const prepaidTd = document.createElement('td');
+        const prepaidInput = document.createElement('input');
+        prepaidInput.type = 'number';
+        prepaidInput.step = '0.01';
+        prepaidInput.className = 'editable-input prepaid-input';
+        prepaidInput.value = task.prepaid || 0;
+        prepaidInput.dataset.field = 'prepaid';
+        prepaidTd.appendChild(prepaidInput);
+        tr.appendChild(prepaidTd);
+
+        // Remaining
+        const remainingTd = document.createElement('td');
+        remainingTd.className = 'remaining-cell';
+        remainingTd.textContent = `${remaining.toFixed(2)} ر.س`;
+        tr.appendChild(remainingTd);
+
+        // Deadline input
+        const deadlineTd = document.createElement('td');
+        const deadlineInput = document.createElement('input');
+        deadlineInput.type = 'datetime-local';
+        deadlineInput.className = 'editable-input';
+        deadlineInput.value = localDeadline;
+        deadlineInput.dataset.field = 'deadline';
+        deadlineTd.appendChild(deadlineInput);
+        tr.appendChild(deadlineTd);
+
+        // Status select
+        const statusTd = document.createElement('td');
+        const statusSelect = document.createElement('select');
+        statusSelect.className = 'editable-select';
+        statusSelect.dataset.field = 'status';
+        Object.values(TASK_STATUS).forEach(status => {
+            const option = document.createElement('option');
+            option.value = status;
+            option.textContent = status;
+            if (task.status === status) option.selected = true;
+            statusSelect.appendChild(option);
+        });
+        statusTd.appendChild(statusSelect);
+        tr.appendChild(statusTd);
+
+        // Delete button
+        const actionTd = document.createElement('td');
+        const deleteBtn = document.createElement('button');
+        deleteBtn.className = 'btn-delete';
+        deleteBtn.dataset.type = 'task';
+        deleteBtn.title = 'حذف المهمة';
+        const deleteIcon = document.createElement('i');
+        deleteIcon.className = 'fas fa-trash-alt';
+        deleteBtn.appendChild(deleteIcon);
+        actionTd.appendChild(deleteBtn);
+        tr.appendChild(actionTd);
+
         if (clientSelect) {
             const choicesInstance = new Choices(clientSelect, { searchEnabled: true, itemSelectText: '', noResultsText: 'لا توجد نتائج' });
             taskTableRowChoicesInstances.set(task.id, choicesInstance);
@@ -334,13 +438,39 @@ document.addEventListener('DOMContentLoaded', () => {
             const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${message}`;
 
             const tr = document.createElement('tr');
-            tr.innerHTML = `
-                <td>${escapeHtml(debtor.clientName)}</td>
-                <td>${escapeHtml(debtor.clientPhone)}</td>
-                <td>${debtor.remaining.toFixed(2)} ر.س</td>
-                <td>${escapeHtml(debtor.taskTitle)}</td>
-                <td>${completionDateFormatted}</td>
-                <td><a href="#" class="btn-whatsapp" data-url="${whatsappUrl}" title="إرسال مطالبة"><i class="fab fa-whatsapp"></i></a></td>`;
+
+            const nameTd = document.createElement('td');
+            nameTd.textContent = debtor.clientName;
+            tr.appendChild(nameTd);
+
+            const phoneTd = document.createElement('td');
+            phoneTd.textContent = debtor.clientPhone;
+            tr.appendChild(phoneTd);
+
+            const remainingTd = document.createElement('td');
+            remainingTd.textContent = `${debtor.remaining.toFixed(2)} ر.س`;
+            tr.appendChild(remainingTd);
+
+            const taskTd = document.createElement('td');
+            taskTd.textContent = debtor.taskTitle;
+            tr.appendChild(taskTd);
+
+            const completionTd = document.createElement('td');
+            completionTd.textContent = completionDateFormatted;
+            tr.appendChild(completionTd);
+
+            const actionTd = document.createElement('td');
+            const link = document.createElement('a');
+            link.href = '#';
+            link.className = 'btn-whatsapp';
+            link.dataset.url = whatsappUrl;
+            link.title = 'إرسال مطالبة';
+            const icon = document.createElement('i');
+            icon.className = 'fab fa-whatsapp';
+            link.appendChild(icon);
+            actionTd.appendChild(link);
+            tr.appendChild(actionTd);
+
             debtorsTableBody.appendChild(tr);
         });
         updateSortIcons('debtors', uiState.debtorSort);
@@ -620,10 +750,36 @@ document.addEventListener('DOMContentLoaded', () => {
         sortedClients.forEach(client => {
             const tr = document.createElement('tr');
             tr.dataset.clientId = client.id;
-            tr.innerHTML = `
-                <td><input type="text" class="editable-input client-editable-input" value="${escapeHtml(client.name)}" data-field="name"></td>
-                <td><input type="text" class="editable-input client-editable-input" value="${escapeHtml(client.phone)}" data-field="phone"></td>
-                <td><button class="btn-delete" data-type="client" title="حذف العميل"><i class="fas fa-trash-alt"></i></button></td>`;
+
+            const nameTd = document.createElement('td');
+            const nameInput = document.createElement('input');
+            nameInput.type = 'text';
+            nameInput.className = 'editable-input client-editable-input';
+            nameInput.value = client.name;
+            nameInput.dataset.field = 'name';
+            nameTd.appendChild(nameInput);
+            tr.appendChild(nameTd);
+
+            const phoneTd = document.createElement('td');
+            const phoneInput = document.createElement('input');
+            phoneInput.type = 'text';
+            phoneInput.className = 'editable-input client-editable-input';
+            phoneInput.value = client.phone;
+            phoneInput.dataset.field = 'phone';
+            phoneTd.appendChild(phoneInput);
+            tr.appendChild(phoneTd);
+
+            const actionTd = document.createElement('td');
+            const deleteBtn = document.createElement('button');
+            deleteBtn.className = 'btn-delete';
+            deleteBtn.dataset.type = 'client';
+            deleteBtn.title = 'حذف العميل';
+            const icon = document.createElement('i');
+            icon.className = 'fas fa-trash-alt';
+            deleteBtn.appendChild(icon);
+            actionTd.appendChild(deleteBtn);
+            tr.appendChild(actionTd);
+
             clientsManagementTableBody.appendChild(tr);
         });
     }
