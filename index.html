@@ -1,0 +1,289 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>مدير المهام الجامعية</title>
+    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/choices.js/public/assets/styles/choices.min.css"/>
+</head>
+<body>
+    <div class="background-container"></div>
+    <div class="app-container">
+        <!-- الشريط الجانبي -->
+        <nav class="sidebar">
+            <div class="sidebar-header">
+                <h3><i class="fas fa-tasks"></i> مدير المهام</h3>
+            </div>
+            <ul class="sidebar-nav">
+                <li class="nav-item active" data-page="dashboard"><a href="#"><i class="fas fa-tachometer-alt"></i> لوحة التحكم</a></li>
+                <li class="nav-item" data-page="tasks"><a href="#"><i class="fas fa-clipboard-list"></i> المهام</a></li>
+                <li class="nav-item" data-page="clients"><a href="#"><i class="fas fa-users"></i> العملاء</a></li>
+                <li class="nav-item" data-page="debtors"><a href="#"><i class="fas fa-hand-holding-usd"></i> المدينين</a></li>
+            </ul>
+        </nav>
+
+        <!-- المحتوى الرئيسي -->
+        <main class="main-content">
+            <!-- صفحة لوحة التحكم -->
+            <section id="dashboard" class="page active">
+                <header class="page-header"><h1>لوحة التحكم</h1></header>
+                <div class="stats-grid">
+                    <div class="stat-card">
+                        <i class="fas fa-dollar-sign icon-revenue"></i>
+                        <div class="stat-info">
+                            <p>إجمالي الأرباح</p>
+                            <h2 id="total-revenue">0.00 ر.س</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-spinner icon-progress"></i>
+                        <div class="stat-info">
+                            <p>مهام قيد التنفيذ</p>
+                            <h2 id="tasks-in-progress">0</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-check-circle icon-completed"></i>
+                        <div class="stat-info">
+                            <p>مهام مكتملة</p>
+                            <h2 id="tasks-completed">0</h2>
+                        </div>
+                    </div>
+                     <div class="stat-card">
+                        <i class="fas fa-wallet icon-pending"></i>
+                        <div class="stat-info">
+                            <p>دفعات معلقة</p>
+                            <h2 id="pending-payments">0</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-file-invoice-dollar icon-debt"></i>
+                        <div class="stat-info">
+                            <p>إجمالي الديون (الدفعات المعلقة)</p>
+                            <h2 id="total-debt">0.00 ر.س</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-calendar-day icon-today-tasks"></i>
+                        <div class="stat-info">
+                            <p>إجمالي طلبات اليوم</p>
+                            <h2 id="tasks-today">0</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-clipboard-check icon-delivered-today"></i>
+                        <div class="stat-info">
+                            <p>مهام سُلِّمت اليوم</p>
+                            <h2 id="delivered-today">0</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-cash-register icon-daily-income"></i>
+                        <div class="stat-info">
+                            <p>إجمالي دخل اليوم</p>
+                            <h2 id="daily-income">0.00 ر.س</h2>
+                        </div>
+                    </div>
+                    <div class="stat-card">
+                        <i class="fas fa-balance-scale icon-avg-price"></i>
+                        <div class="stat-info">
+                            <p>متوسط سعر المهمة</p>
+                            <h2 id="avg-task-price">0.00 ر.س</h2>
+                        </div>
+                    </div>
+                </div>
+                <div class="recent-tasks">
+                    <h3>أحدث 5 مهام</h3>
+                    <div class="table-container">
+                        <table class="tasks-table">
+                            <thead>
+                                <tr>
+                                    <th>عنوان المهمة</th>
+                                    <th>العميل</th>
+                                    <th>المبلغ</th>
+                                    <th>موعد التسليم</th>
+                                    <th>الحالة</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-tasks-table-body">
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </section>
+
+            <!-- صفحة المهام -->
+            <section id="tasks" class="page">
+                <header class="page-header">
+                    <h1>قائمة المهام</h1>
+                    <button id="add-task-btn" class="btn btn-primary"><i class="fas fa-plus"></i> إضافة مهمة جديدة</button>
+                </header>
+
+                <!-- ============ بداية التعديل: عناصر الفلترة والبحث لجدول المهام ============ -->
+                <div class="table-controls">
+                    <input type="text" id="task-search-input" class="search-input" placeholder="بحث في المهام...">
+                    <div class="filter-buttons">
+                        <button class="filter-btn active" data-filter="all">الكل</button>
+                        <button class="filter-btn" data-filter="جديد">جديد</button>
+                        <button class="filter-btn" data-filter="قيد التنفيذ">قيد التنفيذ</button>
+                        <button class="filter-btn" data-filter="مكتمل">مكتمل</button>
+                        <button class="filter-btn" data-filter="مدفوع">مدفوع</button>
+                    </div>
+                </div>
+                <!-- ============ نهاية التعديل: عناصر الفلترة والبحث لجدول المهام ============ -->
+
+                <div class="table-container">
+                    <table class="tasks-table">
+                        <thead>
+                            <tr>
+                                <th data-sort="text" data-field="title">عنوان المهمة <span class="sort-icon fas fa-sort"></span></th>
+                                <th data-sort="text" data-field="clientId">العميل <span class="sort-icon fas fa-sort"></span></th>
+                                <th data-sort="text" data-field="type">النوع <span class="sort-icon fas fa-sort"></span></th>
+                                <th data-sort="number" data-field="price">المبلغ المتفق عليه <span class="sort-icon fas fa-sort"></span></th>
+                                <th data-sort="number" data-field="prepaid">المدفوع مقدماً <span class="sort-icon fas fa-sort"></span></th>
+                                <th data-sort="number" data-field="remaining">المتبقي <span class="sort-icon fas fa-sort"></span></th>
+                                <th data-sort="date" data-field="deadline">موعد التسليم <span class="sort-icon fas fa-sort"></span></th>
+                                <th data-sort="text" data-field="status">الحالة <span class="sort-icon fas fa-sort"></span></th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="tasks-table-body">
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+
+            <!-- صفحة العملاء -->
+            <section id="clients" class="page">
+                <header class="page-header">
+                    <h1>قائمة العملاء</h1>
+                    <div class="header-buttons">
+                        <button id="manage-clients-btn" class="btn btn-primary"><i class="fas fa-user-cog"></i> إدارة العملاء</button>
+                        <button id="import-clients-btn" class="btn btn-secondary"><i class="fas fa-file-import"></i> استيراد من ملف vcf</button>
+                    </div>
+                </header>
+                <div id="clients-list">
+                </div>
+            </section>
+
+            <!-- صفحة المدينين -->
+            <section id="debtors" class="page">
+                <header class="page-header">
+                    <h1>المدينين (المهام المكتملة غير مدفوعة)</h1>
+                </header>
+
+                <!-- ============ بداية التعديل: عناصر البحث لجدول المدينين ============ -->
+                <div class="table-controls">
+                    <input type="text" id="debtor-search-input" class="search-input" placeholder="بحث في المدينين...">
+                </div>
+                <!-- ============ نهاية التعديل: عناصر البحث لجدول المدينين ============ -->
+
+                <div class="table-container">
+                    <table class="tasks-table">
+                        <thead>
+                            <tr>
+                                <th data-sort="text" data-field="clientName">اسم المدين <span class="sort-icon fas fa-sort"></span></th>
+                                <th data-sort="text" data-field="clientPhone">رقم الهاتف <span class="sort-icon fas fa-sort"></span></th>
+                                <th data-sort="number" data-field="remaining">المبلغ المتبقي <span class="sort-icon fas fa-sort"></span></th>
+                                <th data-sort="text" data-field="taskTitle">المهمة <span class="sort-icon fas fa-sort"></span></th>
+                                <th data-sort="date" data-field="completionDate">تاريخ الإكمال <span class="sort-icon fas fa-sort"></span></th>
+                                <th>إرسال مطالبة</th>
+                            </tr>
+                        </thead>
+                        <tbody id="debtors-table-body">
+                            <!-- سيتم ملء المدينين هنا بواسطة JavaScript -->
+                        </tbody>
+                    </table>
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <!-- Modal لإضافة مهمة جديدة -->
+    <div id="add-task-modal" class="modal">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>إضافة مهمة جديدة</h2>
+            <form id="add-task-form">
+                <div class="form-group">
+                    <label for="task-title">عنوان المهمة</label>
+                    <input type="text" id="task-title" required>
+                </div>
+                <div class="form-group">
+                    <label for="task-client">العميل</label>
+                    <select id="task-client" required></select>
+                </div>
+                <div class="form-group">
+                    <label for="task-type">نوع المهمة</label>
+                    <select id="task-type" required>
+                        <option value="بحث">بحث</option>
+                        <option value="عرض تقديمي">عرض تقديمي</option>
+                        <option value="واجب منزلي">واجب منزلي</option>
+                        <option value="اختبار">اختبار</option>
+                        <option value="مشروع">مشروع</option>
+                        <option value="أخرى">أخرى</option>
+                    </select>
+                </div>
+                <div class="form-group">
+                    <label for="task-price">المبلغ المتفق عليه (ر.س)</label>
+                    <input type="number" id="task-price" required>
+                </div>
+                <div class="form-group">
+                    <label for="task-prepaid">المبلغ المدفوع مقدماً (ر.س)</label>
+                    <input type="number" id="task-prepaid" value="0" required>
+                </div>
+                <div class="form-group">
+                    <label for="task-deadline">موعد التسليم</label>
+                    <input type="datetime-local" id="task-deadline" required>
+                </div>
+                <button type="submit" class="btn btn-primary">حفظ المهمة</button>
+            </form>
+        </div>
+    </div>
+    
+    <!-- Modal لإدارة العملاء -->
+    <div id="manage-clients-modal" class="modal modal-large">
+        <div class="modal-content">
+            <span class="close-modal">&times;</span>
+            <h2>إدارة العملاء</h2>
+            
+            <div class="add-client-section">
+                <h3>إضافة عميل جديد</h3>
+                <form id="add-client-form" class="inline-form">
+                    <input type="text" id="new-client-name" placeholder="اسم العميل" required>
+                    <select id="new-client-country-code"></select>
+                    <input type="tel" id="new-client-phone" placeholder="رقم الهاتف بدون مفتاح الدولة" required>
+                    <button type="submit" class="btn btn-primary"><i class="fas fa-plus"></i> إضافة</button>
+                </form>
+            </div>
+
+            <hr class="modal-divider">
+
+            <div class="clients-management-list">
+                <h3>قائمة العملاء الحالية</h3>
+                <div class="table-container">
+                    <table class="tasks-table">
+                        <thead>
+                            <tr>
+                                <th>اسم العميل</th>
+                                <th>رقم الهاتف</th>
+                                <th>إجراءات</th>
+                            </tr>
+                        </thead>
+                        <tbody id="clients-management-table-body">
+                        </tbody>
+                    </table>
+                </div>
+                <div class="modal-footer">
+                    <button id="export-clients-btn" class="btn btn-secondary"><i class="fas fa-file-export"></i> تصدير كل العملاء (vcf)</button>
+                </div>
+            </div>
+        </div>
+    </div>
+    <script src="https://cdn.jsdelivr.net/npm/choices.js/public/assets/scripts/choices.min.js"></script>
+    <script src="./renderer.js"></script>
+    
+</body>
+</html>

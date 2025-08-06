@@ -1,0 +1,21 @@
+{
+  "name": "gestion-freelance",
+  "version": "1.0.0",
+  "description": "تطبيق لإدارة مهام العمل الحر",
+  "main": "main.js",
+  "scripts": {
+    "start": "electron ."
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "electron": "^27.0.4",
+    "electron-store": "^7.0.3",
+    "electronmon": "^2.0.3",
+    "vcf": "^2.1.1"
+  },
+  "dependencies": {
+    "vcard4-ts": "^0.4.1"
+  }
+}
