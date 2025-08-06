@@ -111,7 +111,13 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Data Persistence ---
     async function loadData() {
-        appData = await window.api.readData();
+        try {
+            appData = await window.api.readData();
+        } catch (error) {
+            console.error('Error reading data:', error);
+            alert('حدث خطأ أثناء تحميل البيانات. يرجى التحقق من وحدة التحكم للمزيد من التفاصيل.');
+            return;
+        }
         // Initialize state for robustness
         appData.clients = appData.clients || [];
         appData.tasks = appData.tasks || [];
@@ -121,7 +127,12 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     async function saveData() {
-        await window.api.writeData(appData);
+        try {
+            await window.api.writeData(appData);
+        } catch (error) {
+            console.error('Error writing data:', error);
+            alert('حدث خطأ أثناء حفظ البيانات. يرجى التحقق من وحدة التحكم للمزيد من التفاصيل.');
+        }
     }
 
     // --- Global Rendering ---
