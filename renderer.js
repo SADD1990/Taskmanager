@@ -123,6 +123,16 @@ document.addEventListener('DOMContentLoaded', () => {
         appData.tasks = appData.tasks || [];
         appData.lastClientId = appData.lastClientId || (appData.clients.length > 0 ? Math.max(...appData.clients.map(c => c.id)) : 0);
         appData.lastTaskId = appData.lastTaskId || (appData.tasks.length > 0 ? Math.max(...appData.tasks.map(t => t.id)) : 0);
+        let updated = false;
+        appData.tasks.forEach(task => {
+            const client = appData.clients.find(c => c.id === task.clientId);
+            const clientName = client ? client.name : (task.clientName || '');
+            if (task.clientName !== clientName) {
+                task.clientName = clientName;
+                updated = true;
+            }
+        });
+        if (updated) await saveData();
         renderAll();
     }
 
@@ -191,7 +201,7 @@ document.addEventListener('DOMContentLoaded', () => {
             tr.appendChild(titleTd);
 
             const clientTd = document.createElement('td');
-            clientTd.textContent = client ? client.name : 'عميل محذوف';
+            clientTd.textContent = client ? client.name : (task.clientName || 'عميل محذوف');
             tr.appendChild(clientTd);
 
             const priceTd = document.createElement('td');
@@ -229,7 +239,8 @@ document.addEventListener('DOMContentLoaded', () => {
             const searchTerm = uiState.taskSearchTerm.toLowerCase().trim();
             displayTasks = displayTasks.filter(task => {
                 const client = appData.clients.find(c => c.id === task.clientId);
-                return task.title.toLowerCase().includes(searchTerm) || (client && client.name.toLowerCase().includes(searchTerm));
+                const name = client ? client.name : task.clientName;
+                return task.title.toLowerCase().includes(searchTerm) || (name && name.toLowerCase().includes(searchTerm));
             });
         }
         // Sort
@@ -283,6 +294,13 @@ document.addEventListener('DOMContentLoaded', () => {
             if (c.id === task.clientId) option.selected = true;
             clientSelect.appendChild(option);
         });
+        if (!appData.clients.some(c => c.id === task.clientId) && task.clientName) {
+            const option = document.createElement('option');
+            option.value = task.clientId;
+            option.textContent = `${task.clientName} (محذوف)`;
+            option.selected = true;
+            clientSelect.appendChild(option);
+        }
         clientTd.appendChild(clientSelect);
         tr.appendChild(clientTd);
 
@@ -496,16 +514,18 @@ document.addEventListener('DOMContentLoaded', () => {
             return;
         }
         
-        const newTask = { 
-            id: ++appData.lastTaskId, 
-            title: document.getElementById('task-title').value.trim(), 
+        const client = appData.clients.find(c => c.id === parseInt(selectedClientId));
+        const newTask = {
+            id: ++appData.lastTaskId,
+            title: document.getElementById('task-title').value.trim(),
             clientId: parseInt(selectedClientId),
-            type: document.getElementById('task-type').value, 
-            price: parseFloat(document.getElementById('task-price').value) || 0, 
-            prepaid: parseFloat(document.getElementById('task-prepaid').value) || 0, 
-            deadline: document.getElementById('task-deadline').value, 
-            status: TASK_STATUS.NEW, 
-            lastStatusUpdate: null 
+            clientName: client ? client.name : '',
+            type: document.getElementById('task-type').value,
+            price: parseFloat(document.getElementById('task-price').value) || 0,
+            prepaid: parseFloat(document.getElementById('task-prepaid').value) || 0,
+            deadline: document.getElementById('task-deadline').value,
+            status: TASK_STATUS.NEW,
+            lastStatusUpdate: null
         };
 
         appData.tasks.push(newTask);
@@ -543,7 +563,11 @@ document.addEventListener('DOMContentLoaded', () => {
             if (field === 'status' && task.status !== value) {
                 task.lastStatusUpdate = new Date().toISOString();
             }
-            
+            if (field === 'clientId') {
+                const selectedClient = appData.clients.find(c => c.id === value);
+                task.clientName = selectedClient ? selectedClient.name : '';
+            }
+
             task[field] = value;
             await saveData();
 
@@ -639,6 +663,11 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
 
                 client[field] = value;
+                if (field === 'name') {
+                    appData.tasks.forEach(t => {
+                        if (t.clientId === clientId) t.clientName = value;
+                    });
+                }
                 await saveData();
                 renderAll(); // Full re-render is acceptable here as client data impacts many places
             }
