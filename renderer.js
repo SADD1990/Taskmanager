@@ -555,6 +555,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
     // --- Helper Functions ---
     function escapeHtml(str) {
+        if (str === undefined) return '';
+        if (typeof str !== 'string') str = String(str);
         return str.replace(/[&<>"']/g, (match) => ({
             '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;'
         }[match]));
