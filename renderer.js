@@ -561,35 +561,111 @@ document.addEventListener('DOMContentLoaded', () => {
     }
     
     function parseVcf(content) {
-        const lines = content.split(/[\r\n]+/);
-        let currentClient = {};
+        // Handle folded lines according to the vCard spec ("\n " or "\r " indicate continuation)
+        content = content.replace(/\r?\n[ \t]/g, '');
+
+        const lines = content.split(/\r?\n/);
+        let currentCard = null;
         let newClientsCount = 0;
-        lines.forEach(line => {
-            line = line.trim();
-            if (line.toUpperCase() === 'BEGIN:VCARD') {
-                currentClient = {};
-            } else if (line.startsWith('FN:') || line.startsWith('FN;')) {
-                currentClient.name = line.substring(line.indexOf(':') + 1).replace(/;+$/, '');
-            } else if (line.startsWith('TEL;')) {
-                const phoneMatch = line.match(/:([+0-9\s-]+)$/);
-                if (phoneMatch) {
-                    currentClient.phone = phoneMatch[1].replace(/[\s-]/g, '');
+        const errors = [];
+
+        lines.forEach((rawLine, index) => {
+            const line = rawLine.trim();
+            if (!line) return; // Skip empty lines
+
+            if (/^BEGIN:VCARD$/i.test(line)) {
+                if (currentCard) {
+                    errors.push(`بداية غير متوقعة لـ vCard عند السطر ${index + 1}`);
                 }
-            } else if (line.toUpperCase() === 'END:VCARD') {
-                if (currentClient.name && currentClient.phone) {
-                    if (!appData.clients.some(c => c.phone === currentClient.phone)) {
-                        appData.clients.push({ id: ++appData.lastClientId, ...currentClient });
-                        newClientsCount++;
-                    }
-                }
-                currentClient = {};
+                currentCard = { names: [], phones: [] };
+                return;
             }
+
+            if (/^END:VCARD$/i.test(line)) {
+                if (!currentCard) {
+                    errors.push(`نهاية vCard بدون بداية عند السطر ${index + 1}`);
+                    return;
+                }
+
+                const name = currentCard.names[0];
+                if (name && currentCard.phones.length > 0) {
+                    currentCard.phones.forEach(phone => {
+                        if (!appData.clients.some(c => c.phone === phone)) {
+                            appData.clients.push({ id: ++appData.lastClientId, name, phone });
+                            newClientsCount++;
+                        }
+                    });
+                } else {
+                    errors.push(`بيانات ناقصة في vCard انتهت عند السطر ${index + 1}`);
+                }
+                currentCard = null;
+                return;
+            }
+
+            if (!currentCard) {
+                errors.push(`بيانات خارج vCard عند السطر ${index + 1}: ${line}`);
+                return;
+            }
+
+            // Handle name fields (FN or N)
+            if (/^FN[:;]/i.test(line)) {
+                const value = line.split(/:(.+)/)[1];
+                if (value) {
+                    currentCard.names.push(value.replace(/;+$/, '').trim());
+                } else {
+                    errors.push(`حقل FN فارغ عند السطر ${index + 1}`);
+                }
+                return;
+            }
+
+            if (/^N[:;]/i.test(line)) {
+                const value = line.split(/:(.+)/)[1];
+                if (value) {
+                    const parts = value.split(';').filter(Boolean);
+                    if (parts.length) {
+                        currentCard.names.push(parts.join(' ').trim());
+                    } else {
+                        errors.push(`حقل N فارغ عند السطر ${index + 1}`);
+                    }
+                } else {
+                    errors.push(`حقل N فارغ عند السطر ${index + 1}`);
+                }
+                return;
+            }
+
+            // Handle multiple telephone numbers
+            if (/^TEL[:;]/i.test(line)) {
+                const value = line.split(/:(.+)/)[1];
+                if (value) {
+                    const phone = value.replace(/[^+\d]/g, '');
+                    if (phone) {
+                        currentCard.phones.push(phone);
+                    } else {
+                        errors.push(`رقم هاتف غير صالح عند السطر ${index + 1}`);
+                    }
+                } else {
+                    errors.push(`حقل TEL فارغ عند السطر ${index + 1}`);
+                }
+                return;
+            }
+
+            // Unknown or unsupported line; not necessarily an error but helpful for debugging
+            errors.push(`سطر غير معروف تم تجاهله عند ${index + 1}: ${line}`);
         });
+
+        if (currentCard) {
+            errors.push('انتهى الملف بدون END:VCARD');
+        }
+
         if (newClientsCount > 0) {
             saveData().then(renderAll);
             alert(`تم استيراد ${newClientsCount} عميل جديد بنجاح!`);
         } else {
             alert('لم يتم العثور على عملاء جدد للاستيراد (قد يكونون موجودين بالفعل).');
+        }
+
+        if (errors.length > 0) {
+            console.warn('أخطاء أثناء تحليل ملف vCard:', errors.join('\n'));
         }
     }
 
